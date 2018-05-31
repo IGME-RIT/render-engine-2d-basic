@@ -37,7 +37,9 @@ struct PhysicsBody {
 	glRender base; //VBO
 	float mass;
 	glm::mat4 MVP; //Vertices
-}circle;
+};
+
+PhysicsBody circle;
 
 
 #pragma region program specific Data members
@@ -49,7 +51,7 @@ int NumberOfDivisions = 20;
 glm::vec3 acc,force;
 
 // vector of scene bodies
-std::vector<PhysicsBody> bodies;
+std::vector<PhysicsBody*> bodies;
 #pragma endregion
 
 
@@ -114,7 +116,7 @@ void setup()
 	circle.base.initBuffer(NumberOfDivisions * 3, &vertices[0]);
 
 	//Adding circle to vector of PhysicsBodies that get rendered
-	bodies.push_back(circle);
+	bodies.push_back(&circle);
 }
 
 
@@ -124,7 +126,7 @@ void setup()
 // This runs once every physics timestep.
 void update()
 {
-
+	
 	// Integrate the position of the object using the integrator.
 	circle.origin = EulerIntegrator(circle.origin, timestep, circle.velocity, circle.acceleration);
 
@@ -168,7 +170,7 @@ void main()
 		renderScene();
 
 		//Rendering each body after the scene
-		for each (PhysicsBody body in bodies)
+		for each (PhysicsBody *body in bodies)
 			renderBody(body);
 
 		// Swaps the back buffer to the front buffer

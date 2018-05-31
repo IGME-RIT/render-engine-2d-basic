@@ -333,11 +333,11 @@ void renderScene()
 template<class T>
 void renderBody(T body)
 {
-	glUniformMatrix4fv(uniMVP, 1, GL_FALSE, glm::value_ptr(body.MVP));
-	glBindBuffer(GL_ARRAY_BUFFER, body.base.vbo);
+	glUniformMatrix4fv(uniMVP, 1, GL_FALSE, glm::value_ptr(body->MVP));
+	glBindBuffer(GL_ARRAY_BUFFER, body->base.vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)16);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);
-	glDrawArrays(GL_TRIANGLES, 0, body.base.numberOfVertices);
+	glDrawArrays(GL_TRIANGLES, 0, body->base.numberOfVertices);
 }
 
 #endif _RENDER_H
