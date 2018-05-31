@@ -1,7 +1,8 @@
 /*
 File Name: main.cpp
-Copyright © 2015
+Copyright © 2018
 Original authors: Srinivasan Thiagarajan
+Refactored by Sanketh Bhat
 Written under the supervision of David I. Schwartz, Ph.D., and
 supported by a professional development seed grant from the B. Thomas
 Golisano College of Computing & Information Sciences
@@ -21,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Description:
-This is the skeleton for a bsic 2D engine in OpenGL.
+This is the skeleton for a basic 2D engine in OpenGL.
 */
 
 
