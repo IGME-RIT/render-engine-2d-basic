@@ -26,20 +26,21 @@ This is the skeleton for a basic 2D engine in OpenGL.
 */
 
 
-#include "GLIncludes.h"
+#include "GLRender.h"
 
-// The basic structure for a PhysicsBody. We need a center, a radius, velocity, acceleration, mass, and VBO and total number of vertices.
-struct PhysicsBody {
+
+// The basic structure for a body. We need a center, a radius, velocity, acceleration, mass, and VBO and total number of vertices.
+struct SimpleBody {
 	glm::vec3 origin;
 	float radius;
 	glm::vec3 velocity;
 	glm::vec3 acceleration;
-	glRender base; //VBO
+	Drawer base; //VBO
 	float mass;
 	glm::mat4 MVP; //Vertices
 };
 
-PhysicsBody circle;
+SimpleBody circle;
 
 
 #pragma region program specific Data members
@@ -51,7 +52,7 @@ int NumberOfDivisions = 20;
 glm::vec3 acc,force;
 
 // vector of scene bodies
-std::vector<PhysicsBody*> bodies;
+std::vector<SimpleBody*> bodies;
 #pragma endregion
 
 
@@ -170,7 +171,7 @@ void main()
 		renderScene();
 
 		//Rendering each body after the scene
-		for each (PhysicsBody *body in bodies)
+		for each (SimpleBody *body in bodies)
 			renderBody(body);
 
 		// Swaps the back buffer to the front buffer

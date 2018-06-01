@@ -25,9 +25,25 @@ Description:
 This is the skeleton for a basic 2D engine in OpenGL.
 */
 
-#ifndef _RENDER_H
-#define _RENDER_H
-#include "GLIncludes.h"
+#ifndef _GL_RENDER_H
+#define _GL_RENDER_H
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include "GL\glew.h"
+#include "glfw\glfw3.h"
+#include "glm\glm.hpp"
+#include "glm\gtc\matrix_transform.hpp"
+#include "glm\gtc\type_ptr.hpp"
+#include "glm\gtc\quaternion.hpp"
+#include "glm\gtx\quaternion.hpp"
+#include "glm\gtx\rotate_vector.hpp"
+
+#define PI 3.14159265
+#define DIVISIONS  40
 
 // Global data members
 #pragma region Global Data member
@@ -79,7 +95,7 @@ struct VertexFormat
 };
 
 //This struct consists of the basic stuff needed for getting a shape on the screen.
-struct glRender {
+struct Drawer {
 
 	//This stores the address the buffer/memory in the GPU. It acts as a handle to access the buffer memory in GPU.
 	GLuint vbo;
@@ -340,4 +356,4 @@ void renderBody(T body)
 	glDrawArrays(GL_TRIANGLES, 0, body->base.numberOfVertices);
 }
 
-#endif _RENDER_H
+#endif _GL_RENDER_H
