@@ -1,8 +1,7 @@
 /*
 File Name: main.cpp
 Copyright © 2018
-Original authors: Srinivasan Thiagarajan
-Refactored by Sanketh Bhat
+Original authors: Sanketh Bhat
 Written under the supervision of David I. Schwartz, Ph.D., and
 supported by a professional development seed grant from the B. Thomas
 Golisano College of Computing & Information Sciences
@@ -22,119 +21,67 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Description:
-This is the skeleton for a basic 2D engine in OpenGL.
+2D rigidbody engine
 */
 
 
 #include "GLRender.h"
+#include "Collisions.h"
 
-
-// The basic structure for a body. We need a center, a radius, velocity, acceleration, mass, and VBO and total number of vertices.
-struct SimpleBody {
-	glm::vec3 origin;
-	float radius;
-	glm::vec3 velocity;
-	glm::vec3 acceleration;
-	Drawer base; //VBO
-	float mass;
-	glm::mat4 MVP; //Vertices
-};
-
-SimpleBody circle;
 
 
 #pragma region program specific Data members
-// We change this variable upon detecting collision
-float timestep = 0.012f;
+
+float timestep = .016;
 //the number of disvision used to make the structure of the circle
 int NumberOfDivisions = 20;
-//Acceleration and force
-glm::vec3 acc,force;
+
+
+glm::vec3 mousePos;
+
+
+GameObject* objA;
+GameObject* objB;
+
+Model* meshA;
+Model* meshB;
 
 // vector of scene bodies
-std::vector<SimpleBody*> bodies;
+std::vector<GameObject*> bodies;
+
+
 #pragma endregion
 
-
-glm::vec3 AcceleratedVel(glm::vec3 Acc, glm::vec3 velocity, float h)
+glm::vec3 GetMousePos()
 {
-	// Calculate the change in velocity ina given time h, for an acceleration of Acc
-	return velocity + (Acc*h);
+
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+
+	//normalized device coordinates
+	float NDCX = (x / 400.0f) - 1.0f;
+	float NDCY = -(y / 400.0f) + 1.0f;
+
+	return glm::vec3(NDCX, NDCY, 0.0f);
+
+
 }
 
-
-glm::vec3 EulerIntegrator(glm::vec3 pos, float h, glm::vec3 &velocity, glm::vec3 &Acceleration)
-{
-	glm::vec3 P;
-
-	//Calculate the displacement in that time step with the current velocity.
-	P = pos + (h * velocity);
-
-	//calculate the velocity at the end of the timestep.
-	velocity = AcceleratedVel(Acceleration, velocity, h);
-	Acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	//return the position P
-	return P;
-}
-
-
-
-
-//This function sets up a basic circle, change variables as required
-void setup()
-{
-	circle.MVP = MVP;
-
-	//Set up the global variables.
-	acc = glm::vec3(0.0f, 0.0f, 0.0f);
-	force = glm::vec3(0.0f, 0.0f, 0.0f);
-	
-	//Setting up the Circle
-	circle.origin = glm::vec3(0.0f, 0.0f, 0.0f);
-	circle.velocity = glm::vec3(0.0f, 0.0f,0.0f);
-	circle.radius = 0.15f;
-	circle.mass = 1.0f;
-	circle.acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-	float radius = circle.radius;
-
-	VertexFormat center(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
-	std::vector<VertexFormat> vertices;
-
-	float theta = 360.0f / NumberOfDivisions;
-
-	//Circle vertex generation
-	//In this example we are not implementing the proper the code for indices. We are just going to produce redundant information in the buffer.
-	//since we are only having a small number of objects on the screen currently, this redundancy should not matter.
-	for (int i = 0; i < NumberOfDivisions; i++)
-	{
-		//In every iteration, the center, the point at angle theta and at angle (theta+delta) are fed into the buffer.
-		vertices.push_back(center);
-		vertices.push_back(VertexFormat(glm::vec3(radius * cos(glm::radians(i*theta)), radius * sin(glm::radians(i*theta)), 0.0f), glm::vec4(0.7f, 0.20f, 0.0f, 1.0f)));
-		vertices.push_back(VertexFormat(glm::vec3(radius * cos(glm::radians((i + 1)*theta)), radius * sin(glm::radians((i + 1)*theta)), 0.0f), glm::vec4(0.7f, 0.20f, 0.0f, 1.0f)));
-	}
-
-	circle.base.initBuffer(NumberOfDivisions * 3, &vertices[0]);
-
-	//Adding circle to vector of PhysicsBodies that get rendered
-	bodies.push_back(&circle);
-}
-
-
-// Functions called between every frame.
 #pragma region util_functions
 
-// This runs once every physics timestep.
+
+
 void update()
 {
-	
-	// Integrate the position of the object using the integrator.
-	circle.origin = EulerIntegrator(circle.origin, timestep, circle.velocity, circle.acceleration);
 
-	//The position of the object needs to be changed and sent to the GPU in form of a matrix
-	glm::mat4 translation = glm::translate(glm::vec3(circle.origin));
-	circle.MVP = PV * translation;
+	for each (GameObject* body in bodies)
+	{
+		body->update(timestep, PV);
+	}
 }
+
+
+
 
 
 // This function is used to handle key inputs.
@@ -144,11 +91,113 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	//Sets the current window to a close flag when ESC is pressed
 	if (key == GLFW_KEY_ESCAPE && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
 	{
-		glfwSetWindowShouldClose(window,1);
+		glfwSetWindowShouldClose(window, 1);
 	}
-	
+
+	//Object 1 Controls
+	if (key == GLFW_KEY_A && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->Position(glm::vec3(objA->Position().x- 0.05f, objA->Position().y,0));
+	}
+	if (key == GLFW_KEY_D && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->Position(glm::vec3(objA->Position().x + 0.05f, objA->Position().y, 0));
+	}
+	if (key == GLFW_KEY_W && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->Position(glm::vec3(objA->Position().x , objA->Position().y + 0.05f, 0));
+	}
+	if (key == GLFW_KEY_S && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->Position(glm::vec3(objA->Position().x , objA->Position().y - 0.05f, 0));
+	}
+	if (key == GLFW_KEY_Q && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->rotate(glm::vec3(0, 0, 0.1f));
+	}
+	if (key == GLFW_KEY_E && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objA->rotate(glm::vec3(0, 0, -0.1f));
+	}
+
+	//Object 2 Controls
+	if (key == GLFW_KEY_J && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->Position(glm::vec3(objB->Position().x - 0.05f, objB->Position().y, 0));
+	}
+	if (key == GLFW_KEY_L && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->Position(glm::vec3(objB->Position().x + 0.05f, objB->Position().y, 0));
+	}
+	if (key == GLFW_KEY_I && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->Position(glm::vec3(objB->Position().x, objB->Position().y + 0.05f, 0));
+	}
+	if (key == GLFW_KEY_K && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->Position(glm::vec3(objB->Position().x, objB->Position().y - 0.05f, 0));
+	}
+	if (key == GLFW_KEY_U && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->rotate(glm::vec3(0, 0, 0.1f));
+	}
+	if (key == GLFW_KEY_O && ((action == GLFW_PRESS) || action == GLFW_REPEAT))
+	{
+		objB->rotate(glm::vec3(0, 0, -0.1f));
+	}
+
 }
 #pragma endregion
+
+//Makes a 2D polygon based on the vertex number arguement
+Model* setupModel(int n, glm::vec4 color, float size = 0.25f)
+{
+	std::vector<GLuint> indices;
+	std::vector<VertexFormat> vertices;
+	VertexFormat center(glm::vec3(0.0f, 0.0f, 0.0f), color);
+	
+	//Only add indices if you drawing a polygon with more than 3 points.
+	if (n > 3)
+	{
+		//Indices are added in threes to form tris
+		for (int i = 1; i < n+1; i++)
+		{
+			indices.push_back(0); //Start at the center
+			if(i==n) //If we are at the last last vertex, go back to the first  non-center vertex and add it
+			{
+				indices.push_back(i);
+				indices.push_back(1);
+
+			}
+			else
+			{	//Adds current vertex and the next one
+				indices.push_back(i);
+				indices.push_back(i + 1);
+
+			}
+
+		}
+
+		//Only 3+ point polygons need a center vertex
+		vertices.push_back(center);
+	}	
+
+	float theta = 360.0f / n;
+	
+
+	//vertex generation
+	for (int i = 0; i < n; i++)
+	{
+		//The point at angle theta  are fed into the buffer.
+		vertices.push_back(VertexFormat(glm::vec3(size * cos(glm::radians(i*theta)), size * sin(glm::radians(i*theta)), 0.0f), color));
+		
+	}
+	 return new Model(vertices.size(), vertices.data(), indices.size(), indices.data());
+
+}
+
+
+
 
 void main()
 {
@@ -156,31 +205,74 @@ void main()
 	init();
 
 	// Sends the funtion as a funtion pointer along with the window to which it should be applied to.
+
 	glfwSetKeyCallback(window, key_callback);
 
+	int v1;
+	int v2;
+	bool currentState = false;
+	bool prevState = false;
+
+	std::cout << "Enter number of sides for object 1: ";
+	std::cin >> v1;
+	std::cout << "Enter number of sides for object 2: ";
+	std::cin >> v2;
+
+	std::cout << "WASD to move object 1, Q & E to rotate it. \n";
+	std::cout << "IJKL to move object 2, U & O to rotate it. \n";
+	
+	//Creating models
+	meshA = setupModel(v1, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	meshB = setupModel(v2, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	
+
 	//Sets up bodies in the scene
-	setup();
+	objA = new GameObject(meshA);
+	objB = new GameObject(meshB);
+
+	bodies.push_back(objA);
+	bodies.push_back(objB);
+
+	objA->Position(glm::vec3(-0.5, 0, 0));
+	objB->Position(glm::vec3(0.5, 0, 0));
 
 	// Enter the main loop.
 	while (!glfwWindowShouldClose(window))
 	{
+
 		// Call to update() which will update the gameobjects.
 		update();
+
+		if (TestSAT(*objA, *objB))
+			currentState = true;
+		else
+			currentState = false;
+
+		//Printing current collision info
+		if(currentState && !prevState)
+			std::cout << "Currently Colliding!\n";
+		else if(!currentState && prevState)
+			std::cout << "Currently not Colliding!\n";
 
 		// Call the render function(s).
 		renderScene();
 
-		//Rendering each body after the scene
-		for each (SimpleBody *body in bodies)
-			renderBody(body);
-
+		for each (GameObject* body in bodies)
+		{
+			body->render(uniMVP);
+		}
 		// Swaps the back buffer to the front buffer
 		// Remember, you're rendering to the back buffer, then once rendering is complete, you're moving the back buffer to the front so it can be displayed.
 		glfwSwapBuffers(window);
 
 		// Checks to see if any events are pending and then processes them.
 		glfwPollEvents();
+
+		prevState = currentState;
+
 	}
+
+	delete objA,objB,meshA,meshB;
 
 	//Cleans shaders and the program and frees up GLFW memory
 	cleanup();

@@ -28,19 +28,7 @@ This is the skeleton for a basic 2D engine in OpenGL.
 #ifndef _GL_RENDER_H
 #define _GL_RENDER_H
 
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include "GL\glew.h"
-#include "glfw\glfw3.h"
-#include "glm\glm.hpp"
-#include "glm\gtc\matrix_transform.hpp"
-#include "glm\gtc\type_ptr.hpp"
-#include "glm\gtc\quaternion.hpp"
-#include "glm\gtx\quaternion.hpp"
-#include "glm\gtx\rotate_vector.hpp"
+#include "GLIncludes.h"
 
 #define PI 3.14159265
 #define DIVISIONS  40
@@ -50,107 +38,28 @@ This is the skeleton for a basic 2D engine in OpenGL.
 // This is your reference to your shader program.
 // This will be assigned with glCreateProgram().
 // This program will run on your GPU.
-GLuint program;
+ GLuint program;
 
 // These are your references to your actual compiled shaders
-GLuint vertex_shader;
-GLuint fragment_shader;
+  GLuint vertex_shader;
+  GLuint fragment_shader;
 
 // This is a reference to your uniform MVP matrix in your vertex shader
-GLuint uniMVP;
-GLuint color;
+ GLuint uniMVP;
+ GLuint color;
 
-glm::mat4 view;
-glm::mat4 proj;
-glm::mat4 PV;
-glm::mat4 MVP;
+ glm::mat4 view;
+ glm::mat4 proj;
+ glm::mat4 PV;
+ glm::mat4 MVP;
 
 // Reference to the window object being created by GLFW.
-GLFWwindow* window;
-
+ GLFWwindow* window;
 
 
 #pragma endregion	
 
-#pragma region Structs
-// We create a VertexFormat struct, which defines how the data passed into the shader code wil be formatted
-struct VertexFormat
-{
-	glm::vec4 color;	// A vector4 for color has 4 floats: red, green, blue, and alpha
-	glm::vec3 position;	// A vector3 for position has 3 float: x, y, and z coordinates
 
-						// Default constructor
-	VertexFormat()
-	{
-		color = glm::vec4(0.0f);
-		position = glm::vec3(0.0f);
-	}
-
-	// Constructor
-	VertexFormat(const glm::vec3 &pos, const glm::vec4 &iColor)
-	{
-		position = pos;
-		color = iColor;
-	}
-};
-
-//This struct consists of the basic stuff needed for getting a shape on the screen.
-struct Drawer {
-
-	//This stores the address the buffer/memory in the GPU. It acts as a handle to access the buffer memory in GPU.
-	GLuint vbo;
-
-	//This will be used to tell the GPU, how many vertices will be needed to draw during drawcall.
-	int numberOfVertices;
-
-	//This function gets the number of vertices and all the vertex values and stores them in the buffer.
-	void initBuffer(int numVertices, VertexFormat* vertices)
-	{
-		numberOfVertices = numVertices;
-
-		// This generates buffer object names
-		// The first parameter is the number of buffer objects, and the second parameter is a pointer to an array of buffer objects (yes, before this call, vbo was an empty variable)
-		glGenBuffers(1, &vbo);
-
-		//// Binds a named buffer object to the specified buffer binding point. Give it a target (GL_ARRAY_BUFFER) to determine where to bind the buffer.
-		//// There are several different target parameters, GL_ARRAY_BUFFER is for vertex attributes, feel free to Google the others to find out what else there is.
-		//// The second paramter is the buffer object reference. If no buffer object with the given name exists, it will create one.
-		//// Buffer object names are unsigned integers (like vbo). Zero is a reserved value, and there is no default buffer for each target (targets, like GL_ARRAY_BUFFER).
-		//// Passing in zero as the buffer name (second parameter) will result in unbinding any buffer bound to that target, and frees up the memory.
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-		//// Creates and initializes a buffer object's data.
-		//// First parameter is the target, second parameter is the size of the buffer, third parameter is a pointer to the data that will copied into the buffer, and fourth parameter is the 
-		//// expected usage pattern of the data. Possible usage patterns: GL_STREAM_DRAW, GL_STREAM_READ, GL_STREAM_COPY, GL_STATIC_DRAW, GL_STATIC_READ, GL_STATIC_COPY, GL_DYNAMIC_DRAW, 
-		//// GL_DYNAMIC_READ, or GL_DYNAMIC_COPY
-		//// Stream means that the data will be modified once, and used only a few times at most. Static means that the data will be modified once, and used a lot. Dynamic means that the data 
-		//// will be modified repeatedly, and used a lot. Draw means that the data is modified by the application, and used as a source for GL drawing. Read means the data is modified by 
-		//// reading data from GL, and used to return that data when queried by the application. Copy means that the data is modified by reading from the GL, and used as a source for drawing.
-		glBufferData(GL_ARRAY_BUFFER, sizeof(VertexFormat) * numVertices, vertices, GL_STATIC_DRAW);
-
-		//// By default, all client-side capabilities are disabled, including all generic vertex attribute arrays.
-		//// When enabled, the values in a generic vertex attribute array will be accessed and used for rendering when calls are made to vertex array commands (like glDrawArrays/glDrawElements)
-		//// A GL_INVALID_VALUE will be generated if the index parameter is greater than or equal to GL_MAX_VERTEX_ATTRIBS
-		glEnableVertexAttribArray(0);
-
-		//// Defines an array of generic vertex attribute data. Takes an index, a size specifying the number of components (in this case, floats)(has a max of 4)
-		//// The third parameter, type, can be GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT, GL_FIXED, or GL_FLOAT
-		//// The fourth parameter specifies whether to normalize fixed-point data values, the fifth parameter is the stride which is the offset (in bytes) between generic vertex attributes
-		//// The fifth parameter is a pointer to the first component of the first generic vertex attribute in the array. If a named buffer object is bound to GL_ARRAY_BUFFER (and it is, in this case) 
-		//// then the pointer parameter is treated as a byte offset into the buffer object's data.
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)16);
-		//// You'll note sizeof(VertexFormat) is our stride, because each vertex contains data that adds up to that size.
-		//// You'll also notice we offset this parameter by 16 bytes, this is because the vec3 position attribute is after the vec4 color attribute. A vec4 has 4 floats, each being 4 bytes 
-		//// so we offset by 4*4=16 to make sure that our first attribute is actually the position. The reason we put position after color in the struct has to do with padding.
-		//// For more info on padding, Google it.
-
-		//// This is our color attribute, so the offset is 0, and the size is 4 since there are 4 floats for color.
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);
-	}
-};
-
-#pragma endregion
 
 // Functions called only once every time the program is executed.
 #pragma region Helper_functions
@@ -233,6 +142,9 @@ GLuint createShader(std::string sourceCode, GLenum shaderType)
 	return shader;
 }
 
+
+
+
 // Initialization code
 void init()
 {
@@ -240,7 +152,7 @@ void init()
 
 	// Creates a window given (width, height, title, monitorPtr, windowPtr).
 	// Don't worry about the last two, as they have to do with controlling which monitor to display on and having a reference to other windows. Leaving them as nullptr is fine.
-	window = glfwCreateWindow(1000, 1000, "Forces and Acceleration", nullptr, nullptr);
+	window = glfwCreateWindow(800, 800, "Ridid Bodies", nullptr, nullptr);
 
 	// Makes the OpenGL context current for the created window.
 	glfwMakeContextCurrent(window);
@@ -250,13 +162,16 @@ void init()
 	// since it would match our FPS to the screen refresh rate.
 	// Set to 1 to enable VSync.
 	glfwSwapInterval(0);
-
+	
 
 	// Initializes the glew library
 	glewInit();
 
 	// Enables the depth test, which you will want in most cases. You can disable this in the render loop if you need to.
 	glEnable(GL_DEPTH_TEST);
+
+
+	
 
 	// Read in the shader code from a file.
 	std::string vertShader = readShader("../VertexShader.glsl");
@@ -282,7 +197,7 @@ void init()
 
 	// Creates a projection matrix using glm::perspective.
 	// First parameter is the vertical FoV (Field of View), second paramter is the aspect ratio, 3rd parameter is the near clipping plane, 4th parameter is the far clipping plane.
-	proj = glm::perspective(45.0f, 800.0f / 800.0f, 0.1f, 100.0f);
+	proj = glm::perspective(45.0f, 800/800.f, 0.1f, 100.0f);
 
 	PV = proj * view;
 
@@ -304,14 +219,14 @@ void init()
 
 	// This is also not necessary, but more efficient and is generally good practice. By default, OpenGL will render both sides of a triangle that you draw. By enabling GL_CULL_FACE, 
 	// we are telling OpenGL to only render the front face. This means that if you rotated the triangle over the X-axis, you wouldn't see the other side of the triangle as it rotated.
-	//glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	//We are disabling hte cull face, because we wish to see both the front and back of the objects in wireframe mode for better understanding the depth.
 
 	// Determines the interpretation of polygons for rasterization. The first parameter, face, determines which polygons the mode applies to.
 	// The face can be either GL_FRONT, GL_BACK, or GL_FRONT_AND_BACK
 	// The mode determines how the polygons will be rasterized. GL_POINT will draw points at each vertex, GL_LINE will draw lines between the vertices, and 
 	// GL_FILL will fill the area inside those lines.
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glPolygonMode(GL_FRONT, GL_FILL);
 
 
 }
@@ -339,21 +254,15 @@ void renderScene()
 	// Clear the screen to white
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0);
 
+
 	// Tell OpenGL to use the shader program you've created.
 	glUseProgram(program);
 
+	
+
 
 }
 
-//Generic function that renders an object with MVP and base varaibles
-template<class T>
-void renderBody(T body)
-{
-	glUniformMatrix4fv(uniMVP, 1, GL_FALSE, glm::value_ptr(body->MVP));
-	glBindBuffer(GL_ARRAY_BUFFER, body->base.vbo);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)16);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)0);
-	glDrawArrays(GL_TRIANGLES, 0, body->base.numberOfVertices);
-}
+
 
 #endif _GL_RENDER_H
